@@ -2,38 +2,52 @@
 
 from network import Bluetooth
 import ubinascii
-prevrssi = 1000
+import json
+import time
+from datatypes import Device
+import _thread
 
-bl = Bluetooth()
-bl.start_scan(5)
+ID = "KUKUK"
+BT = Bluetooth()
+RESET_TIME = 3600 #seconds
+devices = {}
 
-while bl.isscanning():
-    adv = bl.get_adv()
-    if adv:
+def getDevicesJSON():
+    res = {}
+    for key, val in devices.items():
+        res[key] = json.dumps(val.__dict__)
+    return json.dumps(res)
 
-        # try to get the complete name
-        mac = ubinascii.hexlify(adv.mac,":")
-        # rssi = ubinascii.hexlify(adv.rssi)
-        rssi = "RSSI: %d         " % adv.rssi
-        # if mac == "c0:ee:fb:d2:2d:24":
-        #     print("found!")
-        if abs(adv.rssi) < prevrssi:    
-            hrssi = abs(adv.rssi)
-            prevrssi = hrssi
-            da = bl.resolve_adv_data(adv.data, Bluetooth.ADV_NAME_CMPL)
-            print(da)
-            print("RSSI: %d " % hrssi)
-            print("MAC: %s" % mac)
-
+def clearOldDevices():
+    for key,val in devices.items():
+        cur_time = int(time.time())
+        if(cur_time-val.discovery_time > RESET_TIME):
+            del devices[key]
 
 
+def scan():
+    BT.start_scan(-1)
+    while BT.isscanning():
+        adv = BT.get_adv()
+        if adv:
+            name = BT.resolve_adv_data(adv.data, Bluetooth.ADV_NAME_CMPL)
+            if name is not None:
+                mac = ubinascii.hexlify(adv.mac,":")
+                rssi = adv.rssi
+                cur_time = int(time.time())
+                d = Device(mac, name, rssi, cur_time)
+                devices[mac] = d
+            # print(name)
+            # print("RSSI: %d " % rssi)
+            # print("MAC: %s" % mac)
+            # print(json.dumps(d.__dict__))
 
+        clearOldDevices()
+        print(getDevicesJSON())
 
-        #print("MAC: "+ str(mac) + "         " + rssi)
+def test():
+    while True:
+        print("HAHAHAHAHAHAHAHAHAHAAHA")
 
-        #print(bl.resolve_adv_data(adv.data, Bluetooth.ADV_NAME_CMPL))
-        #mfg_data = bl.resolve_adv_data(adv.data, Bluetooth.ADV_MANUFACTURER_DATA)
-        
-        #if mfg_data:
-            # try to get the manufacturer data (Apple's iBeacon data is sent here)
-            #print(ubinascii.hexlify(mfg_data))
+_thread.start_new_thread(test, ())
+_thread.start_new_thread(scan, ())
