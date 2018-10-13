@@ -6,22 +6,27 @@ import json
 import time
 from datatypes import Device
 import _thread
+import urequests
 
 ID = "KUKUK"
 BT = Bluetooth()
-RESET_TIME = 3600 #seconds
+DEVICE_RESET_TIME = 60 #seconds
+POST_IP = "192.168.1.159"
+POST_PORT = 5000
+REQUEST_SLEEP_TIME = 10 #seconds
+
 devices = {}
 
 def getDevicesJSON():
     res = {}
     for key, val in devices.items():
-        res[key] = json.dumps(val.__dict__)
-    return json.dumps(res)
+        res[key] = json.loads(json.dumps(val.__dict__))
+    return json.loads(json.dumps(res))
 
 def clearOldDevices():
     for key,val in devices.items():
         cur_time = int(time.time())
-        if(cur_time-val.discovery_time > RESET_TIME):
+        if(cur_time-val.discovery_time > DEVICE_RESET_TIME):
             del devices[key]
 
 
@@ -43,11 +48,21 @@ def scan():
             # print(json.dumps(d.__dict__))
 
         clearOldDevices()
-        print(getDevicesJSON())
+        #print(getDevicesJSON())
 
-def test():
+def post():
     while True:
-        print("HAHAHAHAHAHAHAHAHAHAAHA")
+        time.sleep(REQUEST_SLEEP_TIME)
+        data = {"id": ID, "devices": getDevicesJSON()}
+        print("Posting data to "+POST_IP+":"+str(POST_PORT)+":")
+        print(data)
+        try:
+            r = urequests.post("http://"+POST_IP+":"+str(POST_PORT)+"/sensor/beacon", json = data)
+            print("Response:")
+            print(r.text)
+        except Exception as e:
+            print("Post failed! Error message:")
+            print(repr(e))
 
-_thread.start_new_thread(test, ())
+_thread.start_new_thread(post, ())
 _thread.start_new_thread(scan, ())
