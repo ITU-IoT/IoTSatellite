@@ -7,14 +7,18 @@ import time
 from datatypes import Device
 import _thread
 import urequests
+from requests import get,post
 
 ID = "KUKUK"
 BT = Bluetooth()
 DEVICE_RESET_TIME = 60 #seconds
-POST_IP = "192.168.1.159"
-POST_PORT = 5000
-REQUEST_SLEEP_TIME = 10 #seconds
+HUB_IP = "192.168.43.128"
+HUB_PORT = 5000
+POST_PATH = "/sensor/beacon"
+GET_PATH = "/sensor/beacon/device"
+REQUEST_SLEEP_TIME = 1 #seconds
 
+outlook_devices = []
 devices = {}
 
 def getDevicesJSON():
@@ -36,8 +40,8 @@ def scan():
         adv = BT.get_adv()
         if adv:
             name = BT.resolve_adv_data(adv.data, Bluetooth.ADV_NAME_CMPL)
-            if name is not None:
-                mac = ubinascii.hexlify(adv.mac,":")
+            mac = ubinascii.hexlify(adv.mac,":")
+            if name is not None and any((name == d['name']) for d in outlook_devices): #Should be mac address, but the tool we are using on the phone keeps changing the mac address.
                 rssi = adv.rssi
                 cur_time = int(time.time())
                 d = Device(mac, name, rssi, cur_time)
@@ -50,19 +54,28 @@ def scan():
         clearOldDevices()
         #print(getDevicesJSON())
 
-def post():
+def postDevices():
     while True:
         time.sleep(REQUEST_SLEEP_TIME)
+        print(getDevicesJSON())
         data = {"id": ID, "devices": getDevicesJSON()}
-        print("Posting data to "+POST_IP+":"+str(POST_PORT)+":")
-        print(data)
-        try:
-            r = urequests.post("http://"+POST_IP+":"+str(POST_PORT)+"/sensor/beacon", json = data)
-            print("Response:")
-            print(r.text)
-        except Exception as e:
-            print("Post failed! Error message:")
-            print(repr(e))
+        post(HUB_IP, HUB_PORT, POST_PATH, data)
 
-_thread.start_new_thread(post, ())
+def getDevices():
+    global outlook_devices
+    while True:
+        time.sleep(REQUEST_SLEEP_TIME)
+        r = get(HUB_IP, HUB_PORT, GET_PATH)
+        if r is None:
+            continue
+        deviceJson = json.loads(r.text)
+        print(outlook_devices)
+        if 'devices' not in deviceJson:
+            print("Request succeeded, but response was insufficient")
+            continue
+        outlook_devices = deviceJson['devices']
+
+
+_thread.start_new_thread(postDevices, ())
 _thread.start_new_thread(scan, ())
+_thread.start_new_thread(getDevices, ())
