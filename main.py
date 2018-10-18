@@ -16,7 +16,8 @@ HUB_IP = "192.168.43.128"
 HUB_PORT = 5000
 POST_PATH = "/sensor/beacon"
 GET_PATH = "/sensor/beacon/device"
-REQUEST_SLEEP_TIME = 1 #seconds
+POST_REQUEST_SLEEP_TIME = 2 #seconds
+GET_REQUEST_SLEEP_TIME = 5 #seconds
 
 outlook_devices = []
 devices = {}
@@ -43,8 +44,11 @@ def scan():
             mac = ubinascii.hexlify(adv.mac,":")
             if name is not None and any((name == d['name']) for d in outlook_devices): #Should be mac address, but the tool we are using on the phone keeps changing the mac address.
                 rssi = adv.rssi
+                rssi2 = rssi
+                if mac in devices:
+                    rssi2 = devices[mac].rssi
                 cur_time = int(time.time())
-                d = Device(mac, name, rssi, cur_time)
+                d = Device(mac, name, ((rssi+rssi2)/2), cur_time)
                 devices[mac] = d
             # print(name)
             # print("RSSI: %d " % rssi)
@@ -56,7 +60,7 @@ def scan():
 
 def postDevices():
     while True:
-        time.sleep(REQUEST_SLEEP_TIME)
+        time.sleep(POST_REQUEST_SLEEP_TIME)
         print(getDevicesJSON())
         data = {"id": ID, "devices": getDevicesJSON()}
         post(HUB_IP, HUB_PORT, POST_PATH, data)
@@ -64,7 +68,7 @@ def postDevices():
 def getDevices():
     global outlook_devices
     while True:
-        time.sleep(REQUEST_SLEEP_TIME)
+        time.sleep(GET_REQUEST_SLEEP_TIME)
         r = get(HUB_IP, HUB_PORT, GET_PATH)
         if r is None:
             continue
