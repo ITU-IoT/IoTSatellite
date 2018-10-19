@@ -9,7 +9,7 @@ import _thread
 import urequests
 from requests import get,post
 
-ID = "KUKUK"
+NAME = "KUKUK"
 BT = Bluetooth()
 DEVICE_RESET_TIME = 60 #seconds
 HUB_IP = "192.168.43.128"
@@ -62,7 +62,7 @@ def postDevices():
     while True:
         time.sleep(POST_REQUEST_SLEEP_TIME)
         print(getDevicesJSON())
-        data = {"id": ID, "devices": getDevicesJSON()}
+        data = {"name": NAME, "devices": getDevicesJSON()}
         post(HUB_IP, HUB_PORT, POST_PATH, data)
 
 def getDevices():
