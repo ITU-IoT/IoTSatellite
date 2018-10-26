@@ -7,6 +7,6 @@ SSID = "NETGEAR"
 PWD = "hackerMAN158"
 
 pycom.heartbeat(False)
-pycom.rgbled(0xff7f00)
+pycom.rgbled(0xff0000)
 wifiSetup(SSID, PWD)
-pycom.rgbled(0x00ff00)
+pycom.rgbled(0x0000ff)
