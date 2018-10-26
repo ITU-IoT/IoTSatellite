@@ -12,7 +12,7 @@ from requests import get,post
 NAME = "KUKUK"
 BT = Bluetooth()
 DEVICE_RESET_TIME = 60 #seconds
-HUB_IP = "192.168.43.128"
+HUB_IP = "192.168.1.11"
 HUB_PORT = 5000
 POST_PATH = "/sensor/beacon"
 GET_PATH = "/sensor/beacon/device"
